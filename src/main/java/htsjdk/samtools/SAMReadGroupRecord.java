@@ -26,11 +26,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.Iso8601Date;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Header information about a read group.
@@ -51,6 +47,13 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
     public static final String PLATFORM_MODEL_TAG = "PM";
     public static final String PLATFORM_UNIT_TAG = "PU";
     public static final String READ_GROUP_SAMPLE_TAG = "SM";
+    public static final String BARCODE_TAG = "BC";
+
+    /**
+     * The recommended separator for the {@link #BARCODE_TAG} when there are multiple bar codes associated with this read group.
+     */
+    public static final String BARCODE_SEPARATOR = "-";
+
 
     /* Platform values for the @RG-PL tag */
     public enum PlatformValue {
@@ -89,6 +92,36 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 
     public String getPlatform() { return getAttribute(PLATFORM_TAG); }
     public void setPlatform(final String platform) { setAttribute(PLATFORM_TAG, platform); }
+
+    /**
+     * @return the List of barcodes associated with this read group or null
+     */
+    public List<String> getBarcodes() {
+        final String barcodeString = getAttribute(BARCODE_TAG);
+        if(barcodeString == null){
+            return null;
+        } else if( barcodeString.isEmpty()){
+            return Collections.emptyList();
+        } else {
+            return Arrays.asList( barcodeString.split(BARCODE_SEPARATOR));
+        }
+    }
+
+    /**
+     * Set the barcodes associate with this ReadGroup.
+     * Note that null is treated as unsetting the attribute while an empty list is treated as a value set to have no barcodes.
+     * @param barcodes a list of barcodes to associate with this read group
+     */
+    public void setBarcodes(List<String> barcodes) {
+        if( barcodes == null) {
+            setAttribute(BARCODE_TAG, null);
+        } else {
+            if( barcodes.stream().anyMatch(String::isEmpty)){
+                throw new IllegalArgumentException("A barcode must not be an empty String");
+            }
+           setAttribute(BARCODE_TAG, String.join(BARCODE_SEPARATOR, barcodes));
+        }
+    }
 
     public Date getRunDate() {
         final String dt = getAttribute(DATE_RUN_PRODUCED_TAG);
